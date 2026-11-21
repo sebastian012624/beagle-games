@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c0b14">
+  <title>Beagle Games — encuentra tu próxima aventura</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/catalog.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"><span class="brand-mark">B</span><span>BEAGLE<span class="brand-accent"> GAMES</span></span></a>
+    <nav><a href="#catalogo">Catálogo</a><a href="#recomendador">Recomendador</a><a href="#carrito" class="cart-link">Carrito <span class="cart-count">{{ cart_count }}</span></a></nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow"><span class="live-dot"></span> TU PRÓXIMA AVENTURA EMPIEZA AQUÍ</span>
+        <h1>Encuentra el juego<br>que <span>va contigo.</span></h1>
+        <p>Buenas historias, grandes mundos y partidas memorables. Explora el catálogo o encuentra tu siguiente favorito.</p>
+        <a class="button button-primary" href="#catalogo">Explorar catálogo <span>↘</span></a>
+        <div class="hero-meta"><span>✦ Selección gamer</span><span>✦ Precios en COP</span><span>✦ Compra simulada</span></div>
+      </div>
+      <div class="hero-art" aria-label="Ilustración de una consola y un control de videojuegos">
+        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+        <div class="hero-console"><div class="console-light"></div><div class="console-slot"></div><div class="console-label">BG / 01</div></div>
+        <div class="hero-controller"><span class="dpad">✣</span><span class="buttons">●<br>●</span></div>
+        <span class="art-star star-one">✳</span><span class="art-star star-two">✦</span>
+        <div class="art-caption"><span class="live-dot"></span> PLAYER ONE, ¿LISTO?</div>
+      </div>
+      <div class="hero-index">01 <span>—</span> 05</div>
+    </section>
+
+    {% if notice %}<div class="notice" role="status">{{ notice }}</div>{% endif %}
+
+    <section class="section catalog-section" id="catalogo">
+      <div class="section-heading"><div><span class="eyebrow">DESCUBRE ALGO NUEVO</span><h2>El catálogo</h2></div><span class="section-count">{{ visible_games|length }} JUEGOS</span></div>
+      <div class="genre-row">
+        {% for genre in genres %}<a class="genre-chip {% if genre == selected_genre %}active{% endif %}" href="/?genre={{ genre|urlencode }}&amp;q={{ search_term|urlencode }}&amp;sort={{ sort_by }}#catalogo">{{ genre }}</a>{% endfor %}
+      </div>
+      <form class="catalog-controls" action="/" method="get">
+        <input type="hidden" name="genre" value="{{ selected_genre }}">
+        <label class="search-field"><span aria-hidden="true">⌕</span><input type="search" name="q" value="{{ search_term }}" placeholder="Busca un juego por nombre" aria-label="Buscar juego por nombre"><button type="submit">Buscar</button></label>
+        <label class="sort-control"><span>Ordenar por</span><select name="sort">{% for key, label in sort_options.items() %}<option value="{{ key }}" {% if sort_by == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <button class="sort-submit" type="submit">Aplicar</button>
+      </form>
+      <div class="game-grid">
+        {% for game in visible_games %}
+        <article class="game-card">
+          <div class="game-cover cover-{{ loop.index0 % 6 }}"><img class="cover-art" src="{{ game.cover }}" alt="Portada de {{ game.name }}" loading="lazy"><span class="cover-index">BG / {{ "%02d"|format(loop.index) }}</span><span class="cover-level level-{{ game.level|lower }}">● {{ game.level }}</span></div>
+          <div class="game-info"><div class="game-tag">{{ game.genre }}</div><h3>{{ game.name }}</h3><p>{{ game.description }}</p><div class="game-buy"><span class="price">{% if game.price is not defined or game.price is none %}<strong>Precio por confirmar</strong>{% else %}<strong>${{ "{:,.0f}".format(game.price).replace(",", ".") }}</strong> <small>COP</small>{% endif %}</span>
+            <form method="post" action="/carrito/agregar/{{ game.id }}"><button class="add-button" type="submit" aria-label="Agregar {{ game.name }} al carrito">+</button></form>
+          </div></div>
+        </article>
+        {% endfor %}
+      </div>
+      {% if not visible_games %}<div class="no-results"><strong>No encontramos juegos con ese nombre.</strong><span>Prueba otro título o cambia el género seleccionado.</span><a href="/?genre={{ selected_genre|urlencode }}#catalogo">Limpiar búsqueda</a></div>{% endif %}
+    </section>
+
+    <section class="section recommender-section" id="recomendador">
+      <div class="recommend-intro"><span class="eyebrow">TU TALLA, TU ESTILO, TU JUEGO</span><h2>¿No sabes<br>por dónde empezar?</h2><p>Cuéntanos qué te gusta y cuánto quieres gastar. Te buscamos opciones que funcionen con tu PC.</p><div class="recommend-decoration">✳</div></div>
+      <div class="recommend-panel">
+        <div class="panel-top"><span>BEAGLE PICKER</span><span class="panel-status"><i></i> LISTO</span></div>
+        <form method="post" action="/recomendar" class="recommend-form">
+          <label>¿Qué te provoca jugar?<select name="genre" required><option value="">Elige un género</option>{% for genre in genres[1:] %}<option value="{{ genre }}" {% if recommendation_query and recommendation_query.genre == genre %}selected{% endif %}>{{ genre }}</option>{% endfor %}</select></label>
+          <label>¿Qué tan potente es tu PC?<select name="pc_level" required><option value="">Elige un perfil</option>{% for level in ["Bajo", "Medio", "Alto"] %}<option value="{{ level }}" {% if recommendation_query and recommendation_query.pc_level == level %}selected{% endif %}>Requisitos {{ level|lower }}</option>{% endfor %}</select></label>
+          <label>Tu presupuesto máximo <span class="input-wrap"><span>$</span><input type="number" name="budget" min="0" max="10000000" step="10000" placeholder="150000" value="{{ recommendation_query.budget if recommendation_query else '' }}" required><small>COP</small></span></label>
+          <button class="button button-primary recommend-submit" type="submit">Encontrar mis juegos <span>↗</span></button>
+        </form>
+        {% if recommendation_error %}<p class="form-error" role="alert">{{ recommendation_error }}</p>{% endif %}
+        {% if recommendation is defined %}
+          <div class="recommend-results"><h3>{% if recommendation %}{{ recommendation|length }} opciones para ti{% else %}Aún no encontramos coincidencias{% endif %}</h3>
+            {% for game in recommendation %}<div class="recommend-result"><img class="recommend-cover" src="{{ game.cover }}" alt=""><span><b>{{ game.name }}</b><small>{{ game.genre }} · Requisitos {{ game.level|lower }}</small></span><strong>{% if game.price is not defined or game.price is none %}Precio por confirmar{% else %}${{ "{:,.0f}".format(game.price).replace(",", ".") }} COP{% endif %}</strong><form method="post" action="/carrito/agregar/{{ game.id }}"><button class="add-button" type="submit" aria-label="Agregar {{ game.name }} al carrito">+</button></form></div>{% endfor %}
+            {% if not recommendation %}<p class="empty-note">Prueba con otro presupuesto o un perfil de PC más alto.</p>{% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="section cart-section" id="carrito">
+      <div class="section-heading"><div><span class="eyebrow">TU SELECCIÓN</span><h2>Tu carrito <span class="heading-count">{{ cart_count }}</span></h2></div></div>
+      {% if cart %}
+      <div class="cart-layout"><div class="cart-items">
+        {% for game in cart %}<div class="cart-item"><img class="cart-cover" src="{{ game.cover }}" alt="Portada de {{ game.name }}"><div class="cart-name"><strong>{{ game.name }}</strong><span>{{ game.genre }} · Requisitos {{ game.level|lower }}</span></div><strong class="cart-price">{% if game.price is not defined or game.price is none %}Precio por confirmar{% else %}${{ "{:,.0f}".format(game.price).replace(",", ".") }} COP{% endif %}</strong><form method="post" action="/carrito/quitar/{{ game.id }}"><button class="remove-button" type="submit" aria-label="Quitar {{ game.name }}">×</button></form></div>{% endfor %}
+      </div><aside class="cart-summary"><span>RESUMEN DEL PEDIDO</span><div class="summary-line"><span>Juegos ({{ cart_count }})</span><strong>${{ "{:,.0f}".format(cart_total).replace(",", ".") }}</strong></div><div class="summary-line"><span>Impuestos</span><strong>Incluidos</strong></div><div class="summary-total"><span>Total estimado</span><strong>${{ "{:,.0f}".format(cart_total).replace(",", ".") }} <small>COP</small></strong></div><form method="post" action="/pagar"><button class="button button-primary pay-button" type="submit">Pagar ahora <span>↗</span></button></form><p>Esta es una demostración; no se realizará ningún cobro.</p></aside></div>
+      {% else %}<div class="empty-cart"><span>🛒</span><div><h3>Tu carrito está esperando una aventura</h3><p>Explora el catálogo y agrega los juegos que quieras.</p></div><a href="#catalogo" class="text-link">Ver catálogo ↗</a></div>{% endif %}
+    </section>
+
+    {% if order %}<section class="section receipt-section" id="comprobante"><div class="receipt" id="receipt">
+      <div class="receipt-header"><a class="brand" href="/"><span class="brand-mark">B</span><span>BEAGLE<span class="brand-accent"> GAMES</span></span></a><span class="receipt-stamp">SELECCIÓN GAMER</span></div>
+      <div class="receipt-title"><span>¡Juegos comprados!</span><h2>Tu próxima aventura te espera.</h2><p>Referencia {{ order.reference }} · {{ order.date }}</p></div>
+      <div class="receipt-games">{% for game in order.games %}<div class="receipt-game"><img class="receipt-cover" src="{{ game.cover }}" alt=""><span>{{ game.name }} <small>{{ game.genre }}</small></span><strong>{% if game.price is not defined or game.price is none %}Precio por confirmar{% else %}${{ "{:,.0f}".format(game.price).replace(",", ".") }} COP{% endif %}</strong></div>{% endfor %}</div>
+      <div class="receipt-total"><span>Monto pagado</span><strong>${{ "{:,.0f}".format(order.total).replace(",", ".") }} <small>COP</small></strong></div>
+      <p class="receipt-note">Comprobante de demostración Beagle Games. Los precios son valores de referencia.</p>
+    </div><div class="receipt-actions"><button class="button button-secondary" type="button" id="download-png">Descargar imagen</button><button class="button button-primary" type="button" id="download-pdf">Descargar PDF ↗</button></div></section>{% endif %}
+  </main>
+
+  <footer class="footer"><a class="brand" href="/"><span class="brand-mark">B</span><span>BEAGLE<span class="brand-accent"> GAMES</span></span></a><span>Hecho para quienes siempre dicen “una partida más”.</span><span>© 2026 Beagle Games</span></footer>
+  {% if order %}<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script><script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script><script src="/static/receipt.js" defer></script>{% endif %}
+</body>
+</html>

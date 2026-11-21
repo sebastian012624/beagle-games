@@ -1,0 +1,1 @@
+"""Beagle Games application package."""
